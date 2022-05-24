@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { User } = require('../../models');
+const { User, Post } = require('../../models');
 
 // get all users
 router.get('/', (req, res) => {
@@ -18,7 +18,13 @@ router.get('/:id', (req, res) => {
     attributes: { exclude: ['password'] },
     where: {
       id: req.params.id
-    }
+    },
+    include: [
+      {
+        model: Post,
+        attributes: ['id', 'title', 'post_url', 'created_at']
+      }
+    ]
   })
     .then(dbUserData => {
       if (!dbUserData) {
@@ -48,21 +54,19 @@ router.post('/', (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-// expects {email: 'lernantino@gmail.com', password: 'password1234'}
+  // expects {email: 'lernantino@gmail.com', password: 'password1234'}
   User.findOne({
     where: {
       email: req.body.email
     }
   }).then(dbUserData => {
     if (!dbUserData) {
-      res.status(400).json({ message: 'No user with that email address!'});
+      res.status(400).json({ message: 'No user with that email address!' });
       return;
     }
 
-    //res.json({ user: dbUserData });
-
-    // Verify user
     const validPassword = dbUserData.checkPassword(req.body.password);
+
     if (!validPassword) {
       res.status(400).json({ message: 'Incorrect password!' });
       return;
@@ -77,8 +81,8 @@ router.put('/:id', (req, res) => {
 
   // pass in req.body instead to only update what's passed through
   User.update(req.body, {
-        individualHooks: true,
-        where: {
+    individualHooks: true,
+    where: {
       id: req.params.id
     }
   })
